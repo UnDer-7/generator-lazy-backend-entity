@@ -1,16 +1,16 @@
 const mongoose = require('mongoose')
+const paginate = require('mongoose-paginate')
 
-const TemplateSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  age: {
-    type: Number
-  },
+const <%= entity.entityName %>Schema = new mongoose.Schema({ <% for(let i=0; i< field.length; i++) { %>
+  <%= field[i].fieldName %>: {
+    type: <%= field[i].fieldType %>,
+    required: <%= field[i].required %>
+  },<% } %>
   createdAt: {
     type: Date,
     default: Date.now()
   }
 })
-module.exports = mongoose.model('Template', TemplateSchema)
+
+<%= entity.entityName %>Schema.plugin(paginate)
+module.exports = mongoose.model('<%= entity.entityName %>', <%= entity.entityName %>Schema)
