@@ -3,8 +3,10 @@ const paginate = require('mongoose-paginate')
 
 const <%= entity.entityName %>Schema = new mongoose.Schema({ <% for(let i=0; i< field.length; i++) { %>
   <%= field[i].fieldName %>: {
-    type: <%= field[i].fieldType %>,
-    required: <%= field[i].required %>
+    type: <%= field[i].fieldType %>, <%if (field[i].addValid) { %>
+    required: <%= field[i].required %> <% }else { %>
+    required: false
+    <% } %>
   },<% } %>
   createdAt: {
     type: Date,
