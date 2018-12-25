@@ -5,8 +5,7 @@ const <%= entity.entityName %>Schema = new mongoose.Schema({ <% for(let i=0; i< 
   <%= field[i].fieldName %>: {
     type: <%= field[i].fieldType %>, <%if (field[i].addValid) { %>
     required: <%= field[i].required %> <% }else { %>
-    required: false
-    <% } %>
+    required: false <% } %>
   },<% } %>
   createdAt: {
     type: Date,
