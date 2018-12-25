@@ -1,6 +1,7 @@
 'use strict'
 const Generator = require('yeoman-generator')
 const path = require('path')
+const chalk = require('chalk')
 
 const entity = require('./generator/questions/entity')
 const field = require('./generator/questions/field')
@@ -8,10 +9,10 @@ const field = require('./generator/questions/field')
 module.exports = class extends Generator {
   constructor (args, opts) {
     super(args, opts)
-    this.log('\n------------------------------')
-    this.log('---------LAZY-BACKEND---------')
-    this.log('------------entity------------')
-    this.log('\nInitializing the entity generator\n')
+    this.log(chalk.red.bgBlack('\n------------------------------'))
+    this.log(chalk.red.bgBlack('---------LAZY-BACKEND---------'))
+    this.log(chalk.red.bgBlack('------------entity------------'))
+    this.log(('\nInitializing the entity generator\n'))
     this.fields = []
     this.entity = ''
   }
@@ -34,16 +35,16 @@ module.exports = class extends Generator {
       this.log(`\n`)
       let fieldAdded = []
       this.fields.forEach((element, index) => {
-        let field = `Name: ${element.fieldName}, Type: ${element.fieldType}, Validations: ${element.addValid}`
+        let field = `Name: ${chalk.redBright(element.fieldName)}, Type: ${chalk.redBright(element.fieldType)}, Validations: ${chalk.redBright(element.addValid)}`
         if (element.addValid) {
-          field = field + `, Required: ${element.required}`
+          field = field + `, Required: ${chalk.redBright(element.required)}`
           if (element.minMax) {
-            field = field + `, Minimum size: ${element.minimum}, Maximum size: ${element.maximum}`
+            field = field + `, Minimum size: ${chalk.redBright(element.minimum)}, Maximum size: ${chalk.redBright(element.maximum)}`
           }
         }
         fieldAdded.push(field)
         this.log(`${fieldAdded[index]}`)
-        this.log('=============================')
+        this.log(chalk.red.bgBlack('============================='))
       })
       this.log('\n')
     } while (this.addField.addField)
