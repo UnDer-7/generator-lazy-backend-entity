@@ -2,9 +2,11 @@
 const Generator = require('yeoman-generator')
 const path = require('path')
 const chalk = require('chalk')
+const fs = require('fs')
 
 const entity = require('./generator/questions/entity')
 const field = require('./generator/questions/field')
+const templateRoute = require('./templates/routes/templateRoute')
 
 module.exports = class extends Generator {
   constructor (args, opts) {
@@ -50,7 +52,8 @@ module.exports = class extends Generator {
     } while (this.addField.addField)
   }
 
-  start () {
+  async start () {
+    this._private_write_route()
     this._private_model()
     this._private_validator()
     this._private_controller()
@@ -89,5 +92,29 @@ module.exports = class extends Generator {
         field: this.fields
       }
     )
+  }
+
+  _private_write_route () {
+    const hook = '// Do not remove this cometary'
+    const read = './src/routes.js'
+    const write = `${__dirname}/generator/routes/${this.entity.entityName}Route.js`
+
+    fs.readFile(read, 'utf8', (err, data) => {
+      if (err) return this.log({ error: 'Unable to read the Routes.js', err })
+
+      this.destinationRoot(path.resolve(__dirname, 'generator', 'routes'))
+      this.fs.copyTpl(
+        this.templatePath('./routes/templateRoute.js'),
+        this.destinationPath(`${this.entity.entityName}Route.js`),
+        {
+          entity: this.entity
+        }
+      )
+
+      data = data.replace(hook, `${require(write)}\n${hook}`)
+      fs.writeFile(write, data, err => {
+        if (err) return this.log({ error: 'Unable to write on Routes.js', err })
+      })
+    })
   }
 }
