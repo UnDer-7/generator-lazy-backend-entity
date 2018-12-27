@@ -6,10 +6,9 @@ const fs = require('fs')
 
 const entity = require('./generator/questions/entity')
 const field = require('./generator/questions/field')
-const templateRoute = require('./templates/routes/templateRoute')
 
 module.exports = class extends Generator {
-  constructor (args, opts) {
+  constructor(args, opts) {
     super(args, opts)
     this.log(chalk.red.bgBlack('\n------------------------------'))
     this.log(chalk.red.bgBlack('---------LAZY-BACKEND---------'))
@@ -19,7 +18,7 @@ module.exports = class extends Generator {
     this.entity = ''
   }
 
-  async prompting () {
+  async prompting() {
     this.entity = await this.prompt(entity)
     do {
       this.addField = await this.prompt(
@@ -52,14 +51,15 @@ module.exports = class extends Generator {
     } while (this.addField.addField)
   }
 
-  async start () {
-    this._private_write_route()
+  async start() {
+    this._private_read_route()
     this._private_model()
     this._private_validator()
     this._private_controller()
+    this._private_creatTmpRoute()
   }
 
-  _private_model () {
+  _private_model() {
     this.destinationRoot(path.resolve('src', 'app', 'models'))
     this.fs.copyTpl(
       this.templatePath('./model/TemplateModel.js'),
@@ -71,7 +71,7 @@ module.exports = class extends Generator {
     )
   }
 
-  _private_validator () {
+  _private_validator() {
     this.destinationRoot(path.resolve('..', 'validators'))
     this.fs.copyTpl(
       this.templatePath('./validator/TemplateValidator.js'),
@@ -82,7 +82,7 @@ module.exports = class extends Generator {
     )
   }
 
-  _private_controller () {
+  _private_controller() {
     this.destinationRoot(path.resolve('..', 'controllers'))
     this.fs.copyTpl(
       this.templatePath('./controller/TemplateController.js'),
@@ -94,27 +94,51 @@ module.exports = class extends Generator {
     )
   }
 
-  _private_write_route () {
+  _private_read_route() {
     const hook = '// Do not remove this cometary'
     const read = './src/routes.js'
-    const write = `${__dirname}/generator/routes/${this.entity.entityName}Route.js`
+    // this.log('\nREAD - DIRNAME: ', __dirname, '\n')
+    // const write = `${__dirname}/generator/routes/tmpRoute.js`
 
     fs.readFile(read, 'utf8', (err, data) => {
-      if (err) return this.log({ error: 'Unable to read the Routes.js', err })
+      if (err) return this.log({error: 'Unable to read the Routes.js', err})
+
 
       this.destinationRoot(path.resolve(__dirname, 'generator', 'routes'))
       this.fs.copyTpl(
         this.templatePath('./routes/templateRoute.js'),
-        this.destinationPath(`${this.entity.entityName}Route.js`),
+        this.destinationPath('tmpRoute.js'),
         {
           entity: this.entity
-        }
+        },
       )
 
-      data = data.replace(hook, `${require(write)}\n${hook}`)
-      fs.writeFile(write, data, err => {
-        if (err) return this.log({ error: 'Unable to write on Routes.js', err })
-      })
+      this._private_creatTmpRoute(data)
+      // data = data.replace(hook, `${require('./generator/routes/tmpRoute')}\n${hook}`)
+      // this.log('\nthis.data DENTRO DO READFILE', this.data)
+      // fs.writeFile(read, data, err => {
+      //   if (err) return this.log({error: 'Unable to write on Routes.js', err})
+      // })
     })
+  }
+
+  _private_creatTmpRoute(data) {
+    this.log('DATA do CREAT TMP ROUTE: ', data)
+    // const write = `${__dirname}/generator/routes/tmpRoute.js`
+    // const read = './src/routes.js'
+    // this.log('CREATE TEMPLAETE - ROUTE: ', __dirname)
+    // this.log('CREATE TMP - DIRNAME: ', __dirname)
+    // this.destinationRoot(path.resolve(__dirname, 'generator', 'routes'))
+    // this.fs.copyTpl(
+    //   this.templatePath('./routes/templateRoute.js'),
+    //   this.destinationPath('tmpRoute.js'),
+    //   {
+    //     entity: this.entity
+    //   },
+    // )
+    // this.log('\n\nTHIS.DATA: ', this.data)
+    // fs.writeFile(read, this.data, err => {
+    //   if (err) return this.log({ error: 'Unable to write on Routes.js', err })
+    // })
   }
 }
