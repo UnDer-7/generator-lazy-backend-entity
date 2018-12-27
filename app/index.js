@@ -54,20 +54,12 @@ module.exports = class extends Generator {
 
   async start () {
     this.generatorPath = path.resolve(__dirname, 'generator', 'routes')
+
     this._private_model()
     this._private_validator()
     this._private_controller()
     this._private_read_route()
-
-    this.destinationRoot(this.generatorPath)
-    this.fs.copyTpl(
-      this.templatePath('./routes/templateRoute.js'),
-      this.destinationPath('tmpRoute.js'),
-      {
-        entity: this.entity
-      }
-    )
-    // this._private_creatTmpRoute()
+    this._private_create_tmp_route()
   }
 
   _private_model () {
@@ -106,53 +98,38 @@ module.exports = class extends Generator {
   }
 
   _private_read_route () {
-    // const read = './src/routes.js'
     const localPath = path.resolve('..', '..', 'routes.js')
-    // this.log('\nREAD - DIRNAME: ', __dirname, '\n')
-    // const write = `${__dirname}/generator/routes/tmpRoute.js`
 
     fs.readFile(localPath, 'utf8', (err, data) => {
       if (err) return this.log({ error: 'Unable to read the Routes.js', err })
 
-      this._private_creatTmpRoute(data, localPath)
-      // data = data.replace(hook, `${require('./generator/routes/tmpRoute')}\n${hook}`)
-      // this.log('\nthis.data DENTRO DO READFILE', this.data)
-      // fs.writeFile(read, data, err => {
-      //   if (err) return this.log({error: 'Unable to write on Routes.js', err})
-      // })
+      this._private_write_route(data, localPath)
     })
   }
 
-  _private_creatTmpRoute (data, localPath) {
+  _private_create_tmp_route () {
+    this.destinationRoot(this.generatorPath)
+    this.fs.copyTpl(
+      this.templatePath('./routes/templateRoute.js'),
+      this.destinationPath('tmpRoute.js'),
+      {
+        entity: this.entity
+      }
+    )
+  }
+
+  _private_write_route (data, localPath) {
     const hook = '// Do not remove this cometary'
     if (data) {
-      // if (require('./generator/routes/tmpRoute')) {
-      //   this.log('ENTROU NO IF DO REQUIRE')
-      // }
       let route = data.replace(hook, `${require('./generator/routes/tmpRoute')}\n${hook}`)
-      this.log('\nNEW - ROUTES\n', route, '\n')
 
       fs.writeFile(localPath, route, err => {
         if (err) return this.log({ error: 'Unable to write on Routes.js', err })
       })
 
-      this.log('PATH TO DELETE FILE: ', this.generatorPath)
       fs.unlink(`${this.generatorPath}/tmpRoute.js`, err => {
         if (err) return this.log({ error: 'Unable to delete the tmpRoute.js', err })
       })
     }
-    // const write = `${__dirname}/generator/routes/tmpRoute.js`
-    // const read = './src/routes.js'
-    // this.log('CREATE TEMPLAETE - ROUTE: ', __dirname)
-    // this.log('CREATE TMP - DIRNAME: ', __dirname)
-    // this.destinationRoot(path.resolve(__dirname, 'generator', 'routes'))
-    // this.fs.copyTpl(
-    //   this.templatePath('./routes/templateRoute.js'),
-    //   this.destinationPath('tmpRoute.js'),
-    //   {
-    //     entity: this.entity
-    //   },
-    // )
-    // this.log('\n\nTHIS.DATA: ', this.data)
   }
 }
