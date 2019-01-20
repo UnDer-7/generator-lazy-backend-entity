@@ -1,7 +1,7 @@
 # generator-lazy-backend-entity
 Entity generator for [lazy-backend](https://github.com/UnDer-7/generator-lazy-backend)
 ## Video exemple
-![Fail to load the video](https://media.giphy.com/media/pG0eGsJxneE0GZWSYm/giphy.gif)
+![Fail to load the video](https://media.giphy.com/media/62789RPCUl8xGsoWMA/giphy.gif)
 ## About the project
 Creates an entity (controller, model, validation and routes)
 ## Prerequisites
