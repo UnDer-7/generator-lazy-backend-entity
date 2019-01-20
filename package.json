@@ -1,6 +1,6 @@
 {
   "name": "generator-lazy-backend-entity",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Entity generator for lazy-backend",
   "main": "index.js",
   "homepage": "https://github.com/UnDer-7/generator-lazy-backend-entity#readme",
