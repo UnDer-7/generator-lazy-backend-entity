@@ -15,6 +15,7 @@ module.exports = class extends Generator {
     this.log(chalk.red.bgBlack('---------LAZY-BACKEND---------'))
     this.log(chalk.red.bgBlack('------------entity------------'))
     this.log(('\nInitializing the entity generator\n'))
+
     this.fields = []
     this.entity = ''
     this.generatorPath = ''
@@ -56,11 +57,18 @@ module.exports = class extends Generator {
   async start () {
     this.generatorPath = path.resolve(__dirname, 'generator', 'routes')
 
+    this._private_check_database_style()
     this._private_model()
     this._private_validator()
     this._private_controller()
     this._private_read_route()
     this._private_create_tmp_route()
+  }
+
+  _private_check_database_style () {
+    const regexFind = /\mongoose\b/gi
+    const db = fs.readFileSync(`${this.destinationRoot('./')}/package.json`, 'utf8')
+    this.isMongoose = regexFind.test(db)
   }
 
   _private_model () {
@@ -88,8 +96,16 @@ module.exports = class extends Generator {
 
   _private_controller () {
     this.destinationRoot(path.resolve('..', 'controllers'))
+    let templatePath = ''
+
+    if (this.isMongoose) {
+      templatePath = './controller/noSQL/TemplateController.js'
+    } else {
+      templatePath = './controller/sql/TemplateController.js'
+    }
+
     this.fs.copyTpl(
-      this.templatePath('./controller/TemplateController.js'),
+      this.templatePath(templatePath),
       this.destinationPath(`${this.entity.entityName}Controller.js`),
       {
         entity: this.entity,
