@@ -1,6 +1,7 @@
 'use strict'
 
 const Generator = require('yeoman-generator')
+const _ = require('lodash')
 const path = require('path')
 const fs = require('fs')
 const util = require('util')
@@ -27,35 +28,7 @@ module.exports = class extends Generator {
   }
 
   async prompting () {
-    this.entity = await this.prompt(entity)
-    do {
-      this.addField = await this.prompt(
-        {
-          type: 'confirm',
-          name: 'addField',
-          message: `Do you want to add a field?`
-        })
-      if (this.addField.addField) {
-        this.fields.push(await this.prompt(field, function (response) {
-        }))
-      }
-      this.log('\n')
-      this.log(`Fields Added:`)
-      let fieldAdded = []
-      this.fields.forEach((element, index) => {
-        let field = `Name: ${msg.cyan(element.fieldName)}, Type: ${msg.cyan(element.fieldType)}, Validations: ${msg.cyan(element.addValid)}`
-        if (element.addValid) {
-          field = field + `, Required: ${msg.cyan(element.required)}`
-          if (element.minMax) {
-            field = field + `, Minimum size: ${msg.cyan(element.minimum)}, Maximum size: ${msg.cyan(element.maximum)}`
-          }
-        }
-        fieldAdded.push(field)
-        this.log(`${fieldAdded[index]}`)
-        this.log(msg.cyan('============================='))
-      })
-      this.log('\n')
-    } while (this.addField.addField)
+    await this._private_askFieldQuestions()
   }
 
   async start () {
@@ -101,6 +74,50 @@ module.exports = class extends Generator {
     console.log(msg.cyan('\nAuthor: Mateus Gomes da Silva Cardoso'))
   }
 
+  async _private_askFieldQuestions () {
+    this.entity = await this.prompt(entity)
+    do {
+      this.moreFields = await this.prompt(
+        {
+          type: 'confirm',
+          name: 'addField',
+          message: `Do you want to add a field?`
+        })
+      if (this.moreFields.addField) {
+        this.fields.push(await this.prompt(field, function (response) {
+        }))
+      }
+      this.log('\n')
+      this.log(msg.titleDash(`Fields Added:`))
+      let fieldAdded = []
+      this.fields.forEach((element, index) => {
+        let field = `Name: ${msg.cyan(element.fieldName)}, Type: ${msg.cyan(element.fieldType)}`
+        if (element.addValid && element.validations.length > 0) {
+          field += `, Validations:`
+          element.validations.forEach(item => {
+            if (item !== 'lettersNumbers' && item !== 'min' && item !== 'max') {
+              field += ` ${msg.cyan(item)},`
+            }
+            if (item === 'lettersNumbers') {
+              field += msg.cyan(` only ${element.stringConstrains}`) + ','
+            }
+            if (item === 'min') {
+              field += ` Minimum size - ${msg.cyan(element.minSize)},`
+            }
+            if (item === 'max') {
+              field += ` Maximum size - ${msg.cyan(element.maxSize)},`
+            }
+          })
+        }
+        field = _.trimEnd(field, ',')
+        fieldAdded.push(field)
+        this.log(`${fieldAdded[index]}`)
+        this.log(msg.cyan('============================='))
+      })
+      this.log('\n')
+    } while (this.moreFields.addField)
+  }
+
   _private_check_database_style () {
     const regexFind = /\mongoose\b/gi
     const db = fs.readFileSync(`${this.destinationRoot('./')}/package.json`, 'utf8')
@@ -111,7 +128,7 @@ module.exports = class extends Generator {
     this.destinationRoot(path.resolve('src', 'app', 'models'))
 
     this.fs.copyTpl(
-      this.templatePath(`./model/${this._private_getFolder()}/Template.js`),
+      this.templatePath(`./model/${this._private_getFolder()}/Template.ejs`),
       this.destinationPath(`${this.entity.entityName}.js`),
       {
         entity: this.entity,
@@ -123,10 +140,10 @@ module.exports = class extends Generator {
   _private_validator () {
     this.destinationRoot(path.resolve('..', 'validators'))
     this.fs.copyTpl(
-      this.templatePath('./validator/TemplateValidator.js'),
+      this.templatePath('./validator/TemplateValidator.ejs'),
       this.destinationPath(`${this.entity.entityName}Validator.js`),
       {
-        field: this.fields
+        fields: this.fields
       }
     )
   }
@@ -135,7 +152,7 @@ module.exports = class extends Generator {
     this.destinationRoot(path.resolve('..', 'controllers'))
 
     this.fs.copyTpl(
-      this.templatePath(`./controller/${this._private_getFolder()}/TemplateController.js`),
+      this.templatePath(`./controller/${this._private_getFolder()}/TemplateController.ejs`),
       this.destinationPath(`${this.entity.entityName}Controller.js`),
       {
         entity: this.entity,
@@ -147,7 +164,7 @@ module.exports = class extends Generator {
   _private_migration () {
     this.destinationRoot(path.resolve('..', '..', 'database', 'migrations'))
     this.fs.copyTpl(
-      this.templatePath('./migrations/224201901831-create-user.js'),
+      this.templatePath('./migrations/224201901831-create-user.ejs'),
       this.destinationPath(`${this._private_generate_date_time()}-create-${this.entity.entityName.toLowerCase()}.js`),
       {
         entity: this.entity,
@@ -168,7 +185,7 @@ module.exports = class extends Generator {
   _private_create_tmp_route () {
     this.destinationRoot(this.generatorPath)
     this.fs.copyTpl(
-      this.templatePath('./routes/templateRoute.js'),
+      this.templatePath('./routes/templateRoute.ejs'),
       this.destinationPath('tmpRoute.js'),
       {
         entity: this.entity
@@ -179,7 +196,7 @@ module.exports = class extends Generator {
   _private_write_route (data, localPath) {
     const hook = '// Do not remove this cometary'
     if (data) {
-      let route = data.replace(hook, `${require('./generator/routes/tmpRoute')}\n${hook}`)
+      let route = data.replace(hook, `${require('./generator/routes/tmpRoute.js')}\n${hook}`)
 
       fs.writeFile(localPath, route, err => {
         if (err) return this.log({ error: 'Unable to write on Routes.js', err })

@@ -47,7 +47,7 @@ const field = [
   // ------ VALIDATIONS ------
   {
     when: function (response) {
-      return response.addValid // && (response.fieldType === 'String' || response.fieldType === 'Number')
+      return response.addValid
     },
     type: 'checkbox',
     name: 'validations',
@@ -117,7 +117,7 @@ const field = [
       return false
     },
     type: 'list',
-    name: 'fieldType',
+    name: 'stringConstrains',
     message: `Accept only letters or numbers`,
     choices: [
       {
@@ -127,6 +127,10 @@ const field = [
       {
         name: 'Only letters',
         value: 'letter'
+      },
+      {
+        name: 'Only alphanumeric (a-z, A-Z, and 0-9)',
+        value: 'alphanumeric'
       }
     ]
   },
@@ -140,6 +144,7 @@ const field = [
     type: 'input',
     name: 'minSize',
     message: `What's the field's Minimum size?`,
+    default: 5,
     validate: validation.numbers
   },
   {
@@ -151,6 +156,7 @@ const field = [
     },
     type: 'input',
     name: 'maxSize',
+    default: 55,
     message: `What's the field's Maximum size?`,
     validate: validation.numbers
   }

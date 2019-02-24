@@ -15,7 +15,7 @@ module.exports = {
   /**
    * chalk.keyword('orange').bold
    */
-  warning: chalk.keyword('orange').bold,
+  warning: chalk.keyword('orange').bold.underline,
   /**
    * chalk.red
    */

@@ -1,0 +1,19 @@
+'use strict'
+
+const Joi = require('joi')
+
+module.exports = {
+  body: {
+  <%_ for(let i=0; i < fields.length; i++) { _%>
+    <%-fields[i].fieldName %>: <%= fields[i].fieldType.toLowerCase() _%>
+    <%_ if(fields[i].hasOwnProperty('validations')) {_%> <%-fields[i].validations.includes('required') ? '().required()' : '()'_%> <%_} else {_%> () <%_}_%>
+    <%_ if(fields[i].minSize) {_%> .min(<%= fields[i].minSize _%>) <%_ } _%>
+    <%_ if(fields[i].maxSize) {_%> .max(<%= fields[i].maxSize _%>) <%_ } _%>
+    <%_ if(fields[i].stringConstrains === 'letter') {_%> .regex(/^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ]+$/) <%_ } _%>
+    <%_ if(fields[i].stringConstrains === 'number') {_%> .regex(/^[0-9]+$/) <%_ } _%>
+    <%_ if(fields[i].stringConstrains === 'alphanumeric') {_%> .alphanum() <%_ } _%>
+    <%_ if(fields[i].hasOwnProperty('validations')) {_%> <%- fields[i].validations.includes('email') ? '.email()' : ''_%> <%_}_%><%- ',' _%>
+
+<% } _%>
+  }
+}
