@@ -65,8 +65,8 @@ module.exports = class extends Generator {
   _private_model () {
     this.destinationRoot(path.resolve('src', 'app', 'models'))
     this.fs.copyTpl(
-      this.templatePath('./model/TemplateModel.js'),
-      this.destinationPath(`${this.entity.entityName}Model.js`),
+      this.templatePath('./model/Template.js'),
+      this.destinationPath(`${this.entity.entityName}.js`),
       {
         entity: this.entity,
         field: this.fields
