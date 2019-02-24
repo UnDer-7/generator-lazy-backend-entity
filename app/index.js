@@ -8,6 +8,9 @@ const fs = require('fs')
 const entity = require('./generator/questions/entity')
 const field = require('./generator/questions/field')
 
+const endingMessage = chalk.bold.magenta
+const urlGitHub = chalk.bold.magenta.underline
+
 module.exports = class extends Generator {
   constructor (args, opts) {
     super(args, opts)
@@ -65,6 +68,12 @@ module.exports = class extends Generator {
     this._private_create_tmp_route()
   }
 
+  async end () {
+    console.log(endingMessage(`\nIf you like lazy-backend project give it a star at GitHub`))
+    console.log(urlGitHub(`https://github.com/UnDer-7/generator-lazy-backend`))
+    console.log(chalk.cyanBright.bold('\nAuthor: Mateus Gomes da Silva Cardoso'))
+  }
+
   _private_check_database_style () {
     const regexFind = /\mongoose\b/gi
     const db = fs.readFileSync(`${this.destinationRoot('./')}/package.json`, 'utf8')
@@ -73,8 +82,9 @@ module.exports = class extends Generator {
 
   _private_model () {
     this.destinationRoot(path.resolve('src', 'app', 'models'))
+
     this.fs.copyTpl(
-      this.templatePath('./model/Template.js'),
+      this.templatePath(`./model/${this._private_getFolder()}/Template.js`),
       this.destinationPath(`${this.entity.entityName}.js`),
       {
         entity: this.entity,
@@ -96,16 +106,9 @@ module.exports = class extends Generator {
 
   _private_controller () {
     this.destinationRoot(path.resolve('..', 'controllers'))
-    let templatePath = ''
-
-    if (this.isMongoose) {
-      templatePath = './controller/noSQL/TemplateController.js'
-    } else {
-      templatePath = './controller/sql/TemplateController.js'
-    }
 
     this.fs.copyTpl(
-      this.templatePath(templatePath),
+      this.templatePath(`./controller/${this._private_getFolder()}/TemplateController.js`),
       this.destinationPath(`${this.entity.entityName}Controller.js`),
       {
         entity: this.entity,
@@ -148,5 +151,10 @@ module.exports = class extends Generator {
         if (err) return this.log({ error: 'Unable to delete the tmpRoute.js', err })
       })
     }
+  }
+
+  _private_getFolder () {
+    if (this.isMongoose) return 'noSQL'
+    return 'sql'
   }
 }
