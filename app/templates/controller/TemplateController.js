@@ -1,3 +1,5 @@
+'use strict'
+
 const <%= entity.entityName %> = require('../models/<%= entity.entityName %>')
 
 class <%= entity.entityName %>Controller {

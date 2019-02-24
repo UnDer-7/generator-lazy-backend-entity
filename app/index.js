@@ -1,4 +1,5 @@
 'use strict'
+
 const Generator = require('yeoman-generator')
 const path = require('path')
 const chalk = require('chalk')
