@@ -2,22 +2,24 @@
 
 const Generator = require('yeoman-generator')
 const path = require('path')
-const chalk = require('chalk')
 const fs = require('fs')
+const util = require('util')
+const cmd = util.promisify(require('child_process').exec)
 
 const entity = require('./generator/questions/entity')
 const field = require('./generator/questions/field')
-
-const endingMessage = chalk.bold.magenta
-const urlGitHub = chalk.bold.magenta.underline
+const msg = require('./generator/messages')
 
 module.exports = class extends Generator {
   constructor (args, opts) {
     super(args, opts)
-    this.log(chalk.red.bgBlack('\n------------------------------'))
-    this.log(chalk.red.bgBlack('---------LAZY-BACKEND---------'))
-    this.log(chalk.red.bgBlack('------------entity------------'))
-    this.log(('\nInitializing the entity generator\n'))
+    const lazyBackend = msg.titleDash('---------') + msg.error('LAZY-BACKEND') + msg.titleDash('---------')
+    const entity = msg.titleDash('------------') + msg.error('ENTITY') + msg.titleDash('------------')
+
+    this.log(msg.titleDash('\n------------------------------'))
+    this.log(lazyBackend)
+    this.log(entity)
+    this.log(msg.titleDash('------------------------------\n'))
 
     this.fields = []
     this.entity = ''
@@ -39,19 +41,18 @@ module.exports = class extends Generator {
       }
       this.log('\n')
       this.log(`Fields Added:`)
-      this.log(`\n`)
       let fieldAdded = []
       this.fields.forEach((element, index) => {
-        let field = `Name: ${chalk.redBright(element.fieldName)}, Type: ${chalk.redBright(element.fieldType)}, Validations: ${chalk.redBright(element.addValid)}`
+        let field = `Name: ${msg.cyan(element.fieldName)}, Type: ${msg.cyan(element.fieldType)}, Validations: ${msg.cyan(element.addValid)}`
         if (element.addValid) {
-          field = field + `, Required: ${chalk.redBright(element.required)}`
+          field = field + `, Required: ${msg.cyan(element.required)}`
           if (element.minMax) {
-            field = field + `, Minimum size: ${chalk.redBright(element.minimum)}, Maximum size: ${chalk.redBright(element.maximum)}`
+            field = field + `, Minimum size: ${msg.cyan(element.minimum)}, Maximum size: ${msg.cyan(element.maximum)}`
           }
         }
         fieldAdded.push(field)
         this.log(`${fieldAdded[index]}`)
-        this.log(chalk.red.bgBlack('============================='))
+        this.log(msg.cyan('============================='))
       })
       this.log('\n')
     } while (this.addField.addField)
@@ -64,14 +65,40 @@ module.exports = class extends Generator {
     this._private_model()
     this._private_validator()
     this._private_controller()
+    if (!this.isMongoose) this._private_migration()
     this._private_read_route()
     this._private_create_tmp_route()
   }
 
   async end () {
-    console.log(endingMessage(`\nIf you like lazy-backend project give it a star at GitHub`))
-    console.log(urlGitHub(`https://github.com/UnDer-7/generator-lazy-backend`))
-    console.log(chalk.cyanBright.bold('\nAuthor: Mateus Gomes da Silva Cardoso'))
+    const questionCreateTable = await this.prompt([
+      {
+        type: 'confirm',
+        name: 'createTable',
+        message: `Do you want to create ${this.entity.entityName}'s table?`
+      }
+    ])
+
+    if (questionCreateTable.createTable) {
+      try {
+        const { stdout } = await this._private_verify_sequelize_cli()
+        console.log('stdout ', msg.greenText(stdout) + msg.dash('------------------------------\n'))
+      } catch (e) {
+        console.log(msg.error(e))
+        throw msg.error(e)
+      }
+
+      try {
+        const { stdout } = await this._private_create_table()
+        console.log('stdout ', msg.greenText(stdout) + msg.dash('------------------------------\n'))
+      } catch (e) {
+        console.log(msg.error(e))
+        throw msg.error(e)
+      }
+    }
+    console.log(msg.endingMessage(`\nIf you like lazy-backend project give it a star at GitHub`))
+    console.log(msg.urlGitHub(`https://github.com/UnDer-7/generator-lazy-backend`))
+    console.log(msg.cyan('\nAuthor: Mateus Gomes da Silva Cardoso'))
   }
 
   _private_check_database_style () {
@@ -117,13 +144,24 @@ module.exports = class extends Generator {
     )
   }
 
-  _private_read_route () {
-    const localPath = path.resolve('..', '..', 'routes.js')
+  _private_migration () {
+    this.destinationRoot(path.resolve('..', '..', 'database', 'migrations'))
+    this.fs.copyTpl(
+      this.templatePath('./migrations/224201901831-create-user.js'),
+      this.destinationPath(`${this._private_generate_date_time()}-create-${this.entity.entityName.toLowerCase()}.js`),
+      {
+        entity: this.entity,
+        field: this.fields
+      }
+    )
+  }
 
-    fs.readFile(localPath, 'utf8', (err, data) => {
+  _private_read_route () {
+    this.localPath = path.resolve('..', '..', 'routes.js')
+    fs.readFile(this.localPath, 'utf8', (err, data) => {
       if (err) return this.log({ error: 'Unable to read the Routes.js', err })
 
-      this._private_write_route(data, localPath)
+      this._private_write_route(data, this.localPath)
     })
   }
 
@@ -156,5 +194,53 @@ module.exports = class extends Generator {
   _private_getFolder () {
     if (this.isMongoose) return 'noSQL'
     return 'sql'
+  }
+
+  /**
+   * Generates a string containing the date and hour.
+   * format: month, date, year, hours, minutes and seconds
+   * @return {String} - ex: 2132019212724
+   * @private
+   */
+  _private_generate_date_time () {
+    let currentdate = new Date()
+    return '' + (currentdate.getMonth() + 1) +
+      currentdate.getDate() +
+      currentdate.getFullYear() +
+      currentdate.getHours() +
+      currentdate.getMinutes() +
+      currentdate.getSeconds()
+  }
+
+  /**
+   * Check if the user has sequelize_cli installed
+   * @return {Promise} - Returns the child_process.exec()
+   * @private
+   */
+  _private_verify_sequelize_cli () {
+    this.log(msg.dash('\n------------------------------'))
+    this.log('CHECKING IF SEQUELIZE-CLI IS INSTALLED')
+    this.log(msg.dash('------------------------------'))
+    return this._private_execute_command(' npx sequelize --version')
+  }
+
+  _private_create_table () {
+    this.log(msg.dash('\n------------------------------'))
+    this.log(`CREATING ${this.entity.entityName}'S TABLE!`)
+    this.log(msg.dash('------------------------------'))
+
+    return this._private_execute_command('npx sequelize db:migrate')
+  }
+
+  /**
+   * Run a command on the user's console.
+   * It'll execute the command inside the user's project folder
+   * @param command {String}
+   * @return
+   * @private
+   */
+  _private_execute_command (command) {
+    console.log(`Running ${msg.greenText(command)} command`)
+    return cmd(command, { cwd: path.resolve(this.localPath, '..', '..') })
   }
 }
