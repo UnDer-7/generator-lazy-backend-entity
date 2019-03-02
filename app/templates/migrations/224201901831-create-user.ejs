@@ -8,10 +8,11 @@ module.exports = {
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
-      },<% for(let i=0; i< field.length; i++) { %>
-      <%= field[i].fieldName %>: {
-        type: Sequelize.<%= field[i].fieldType === 'Number' ? 'INTEGER' : field[i].fieldType.toUpperCase() %>,
-        allowNull: <%= field[i].required === true ? 'false' : 'true' %>,
+      },<% for(let i=0; i< fields.length; i++) { %>
+      <%= fields[i].fieldName %>: {
+        type: Sequelize.<%= fields[i].fieldType === 'Number' ? 'INTEGER' : fields[i].fieldType.toUpperCase() %>,
+        allowNull: <%= (fields[i].hasOwnProperty('validations') && fields[i].validations.includes('required')) ? 'false' : 'true' %>,
+        unique: <%= (fields[i].hasOwnProperty('validations') && fields[i].validations.includes('unique')) ? 'true' : 'false' %>,
       },<% } %>
       createdAt: {
         allowNull: false,

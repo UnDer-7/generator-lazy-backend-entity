@@ -32,6 +32,7 @@ module.exports = class extends Generator {
   }
 
   async start () {
+    this.log('\nquestions: \n', this.fields, '\n')
     this.generatorPath = path.resolve(__dirname, 'generator', 'routes')
 
     this._private_check_database_style()
@@ -132,7 +133,7 @@ module.exports = class extends Generator {
       this.destinationPath(`${this.entity.entityName}.js`),
       {
         entity: this.entity,
-        field: this.fields
+        fields: this.fields
       }
     )
   }
@@ -168,7 +169,7 @@ module.exports = class extends Generator {
       this.destinationPath(`${this._private_generate_date_time()}-create-${this.entity.entityName.toLowerCase()}.js`),
       {
         entity: this.entity,
-        field: this.fields
+        fields: this.fields
       }
     )
   }

@@ -3,11 +3,53 @@
 const sequelizePaginate = require('sequelize-paginate')
 
 module.exports = (sequelize, DataTypes) => {
-  const <%= entity.entityName %> = sequelize.define('<%= entity.entityName %>', {<% for(let i=0; i< field.length; i++) { %>
-    <%= field[i].fieldName %>: {
-      type: DataTypes.<%= field[i].fieldType.toUpperCase() %>,
-      allowNull: <%= field[i].required === true ? 'false' : 'true' %>
-    },<% } %>
+  const <%= entity.entityName %> = sequelize.define('<%= entity.entityName %>', {
+<%_ for(let i=0; i< fields.length; i++) { _%>
+    <%= fields[i].fieldName %>: {
+      type: DataTypes.<%= fields[i].fieldType.toUpperCase() %>,
+  <%_if(fields[i].hasOwnProperty('validations')) {_%>
+    <%_if(fields[i].validations.includes('required')) {_%>
+      allowNull: false,
+    <%_}_%>
+    <%_if(fields[i].validations.includes('unique')) {_%>
+      unique: true,
+    <%_}_%>
+    <%_if(fields[i].validations.includes('email') ||
+          fields[i].validations.includes('lettersNumbers') ||
+          fields[i].validations.includes('min') ||
+          fields[i].validations.includes('max')) {_%>
+      validate: {
+        <%_if(fields[i].validations.includes('email')) {_%>
+        isEmail: {
+          msg: 'invalid email format'
+        },
+        <%_}_%>
+        <%_if(fields[i].stringConstrains === 'letter') {_%>
+        isAlpha: {
+          msg: 'only letters are allowed'
+        },
+        <%_}_%>
+        <%_if(fields[i].stringConstrains === 'number') {_%>
+        isNumeric: {
+          msg: 'only numbers are allowed'
+        },
+        <%_}_%>
+        <%_if(fields[i].stringConstrains === 'alphanumeric') {_%>
+        isAlphanumeric: {
+          msg: 'only alphanumeric characters are allowed'
+        },
+        <%_}_%>
+        <%_if(fields[i].minSize || fields[i].maxSize) {_%>
+        len: {
+          args: [<%= fields[i].minSize || 0 %>,<%= fields[i].maxSize || 0 %>],
+          msg: 'only values with a length between <%= fields[i].minSize || 0 %> and <%= fields[i].maxSize || 0 %> are allowed'
+        }
+        <%_}_%>
+      }
+    <%_}_%>
+    <%}%>},
+<%_ } _%>
+    freezeTableName: true
   })
 
   <%= entity.entityName %>.associate = function (models) {
