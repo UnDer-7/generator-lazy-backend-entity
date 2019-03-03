@@ -5,7 +5,7 @@ const entity = [
     type: 'input',
     name: 'entityName',
     message: `What's the entity's name?`,
-    validate: validation.onlyBlank
+    validate: validation.isEntityNameValid
   }
 ]
 module.exports = entity

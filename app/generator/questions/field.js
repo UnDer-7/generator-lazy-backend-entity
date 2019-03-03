@@ -2,18 +2,12 @@ const fieldNotValid = 'cannot be applied for this kind of validations'
 const validation = require('../validation')
 const msg = require('../messages')
 
-// const validation = (response) => {
-//   if (!response) return `Field name can't be blank`
-//   if (/\s/g.test(response)) return `Field name can't have blank spaces\n--> ${response}`
-//   return true
-// }
-
 const field = [
   {
     type: 'input',
     name: 'fieldName',
     message: `What's the field's name?`,
-    validate: validation.onlyBlank
+    validate: validation.isNameValid
   },
   {
     type: 'list',
@@ -43,8 +37,6 @@ const field = [
     name: 'addValid',
     message: `Do you want to add validations?`
   },
-
-  // ------ VALIDATIONS ------
   {
     when: function (response) {
       return response.addValid
