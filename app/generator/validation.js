@@ -4,15 +4,18 @@ const { endsWith } = require('lodash')
 const isBlank = entityName => {
   if (!entityName) return msg.error(`Field can't be blank`)
   if (/\s/g.test(entityName)) return msg.error(`Field can't have blank spaces`) + `\n--> ${entityName}`
+  return null
 }
 
 const isNumber = number => /^[0-9]+$/i.test(number)
 
 const isNameValid = name => {
+  if (isBlank(name)) return isBlank(name)
   if (!/^[a-z0-9-_]+$/i.test(name)) return `Invalid character\n-->${name}`
   if (isNumber(name)) return `Can't start with number\n-->${name}`
   if (endsWith(name, '_')) return `Can't end the name with _\n-->${name}`
   if (endsWith(name, '-')) return `Can't end the name with -\n-->${name}`
+  return null
 }
 
 /**
@@ -47,11 +50,11 @@ module.exports = {
    * @return {boolean, string} Returns true if all validations pass
    */
   isEntityNameValid: (response) => {
-    isBlank(response)
-    isNameValid(response)
+    if (isNameValid(response)) return isNameValid(response)
     if (!/^[A-Z]/.test(response)) return `The first character needs to be a capital letter\n-->${response}`
     return true
   },
+
   /**
    * --- Check if a given field:
    * ------ Has a invalid characters
@@ -62,11 +65,11 @@ module.exports = {
    * @return {boolean, string} Returns true if all validations pass
    */
   isNameValid: (response) => {
-    isBlank(response)
-    isNameValid(response)
+    if (isNameValid(response)) return isNameValid(response)
     if (!/^[a-z]/.test(response)) return `The first character needs to be a lower-case letter\n-->${response}`
     return true
   },
+
   /**
    * --- Check if a given field:
    * ------ Starts with a number
@@ -75,7 +78,7 @@ module.exports = {
    * @return {boolean, string} Returns true if all validations pass
    */
   numbers: (response) => {
-    isBlank(response)
+    if (isBlank(response)) return isBlank(response)
     if (!isNumber(response)) return msg.error('Only numbers are acceptable') + `\n-->${response}`
     return true
   }

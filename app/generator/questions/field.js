@@ -1,6 +1,9 @@
-const fieldNotValid = 'cannot be applied for this kind of validations'
 const validation = require('../validation')
 const msg = require('../messages')
+
+const fieldNotValid = (fieldType) => {
+  return msg.warningTwo(`${fieldType} cannot be applied for this kind of validation`)
+}
 
 const field = [
   {
@@ -52,7 +55,7 @@ const field = [
       {
         disabled: function (response) {
           if (response.fieldType === 'Boolean') {
-            return msg.warning(`${response.fieldType} ${fieldNotValid}`)
+            return fieldNotValid(response.fieldType)
           }
           return false
         },
@@ -62,7 +65,7 @@ const field = [
       {
         disabled: function (response) {
           if (response.fieldType !== 'String') {
-            return msg.warning(`${response.fieldType} ${fieldNotValid}`)
+            return fieldNotValid(response.fieldType)
           }
           return false
         },
@@ -72,7 +75,7 @@ const field = [
       {
         disabled: function (response) {
           if (response.fieldType !== 'String') {
-            return msg.warning(`${response.fieldType} ${fieldNotValid}`)
+            return fieldNotValid(response.fieldType)
           }
           return false
         },
@@ -82,7 +85,7 @@ const field = [
       {
         disabled: function (response) {
           if (response.fieldType === 'Date' || response.fieldType === 'Boolean') {
-            return msg.warning(`${response.fieldType} ${fieldNotValid}`)
+            return fieldNotValid(response.fieldType)
           }
           return false
         },
@@ -92,7 +95,7 @@ const field = [
       {
         disabled: function (response) {
           if (response.fieldType === 'Date' || response.fieldType === 'Boolean') {
-            return msg.warning(`${response.fieldType} ${fieldNotValid}`)
+            return fieldNotValid(response.fieldType)
           }
           return false
         },
