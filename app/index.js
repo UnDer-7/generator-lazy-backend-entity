@@ -12,36 +12,26 @@ const field = require('./generator/questions/field')
 const msg = require('./generator/messages')
 
 module.exports = class extends Generator {
-  constructor (args, opts) {
-    super(args, opts)
-    const lazyBackend = msg.titleDash('---------') + msg.error('LAZY-BACKEND') + msg.titleDash('---------')
-    const entity = msg.titleDash('------------') + msg.error('ENTITY') + msg.titleDash('------------')
-
-    this.log(msg.titleDash('\n------------------------------'))
-    this.log(lazyBackend)
-    this.log(entity)
-    this.log(msg.titleDash('------------------------------\n'))
-
-    this.fields = []
-    this.entity = ''
-    this.generatorPath = ''
-  }
-
-  async prompting () {
-    await this._private_askFieldQuestions()
-  }
+  // constructor (args, opts) {
+  //   super(args, opts)
+  // }
 
   async start () {
-    this.log('\nquestions: \n', this.fields, '\n')
-    this.generatorPath = path.resolve(__dirname, 'generator', 'routes')
+    const userRootPath = this.destinationRoot('./')
+    const generatorPath = path.resolve(__dirname, 'generator', 'routes')
 
-    this._private_check_database_style()
+    this._private_is_valid_project(userRootPath)
+
+    this._private_initial_text()
+    await this._private_askFieldQuestions()
+
+    this._private_check_database_style(userRootPath)
     this._private_model()
     this._private_validator()
     this._private_controller()
     if (!this.isMongoose) this._private_migration()
-    this._private_read_route()
-    this._private_create_tmp_route()
+    this._private_read_route(userRootPath)
+    this._private_create_tmp_route(generatorPath)
   }
 
   async end () {
@@ -73,6 +63,16 @@ module.exports = class extends Generator {
     console.log(msg.endingMessage(`\nIf you like lazy-backend project give it a star at GitHub`))
     console.log(msg.urlGitHub(`https://github.com/UnDer-7/generator-lazy-backend`))
     console.log(msg.cyan('\nAuthor: Mateus Gomes da Silva Cardoso'))
+  }
+
+  _private_initial_text () {
+    const lazyBackend = msg.titleDash('---------') + msg.error('LAZY-BACKEND') + msg.titleDash('---------')
+    const entity = msg.titleDash('------------') + msg.error('ENTITY') + msg.titleDash('------------')
+
+    this.log(msg.titleDash('\n------------------------------'))
+    this.log(lazyBackend)
+    this.log(entity)
+    this.log(msg.titleDash('------------------------------\n'))
   }
 
   async _private_askFieldQuestions () {
@@ -119,9 +119,41 @@ module.exports = class extends Generator {
     } while (this.moreFields.addField)
   }
 
-  _private_check_database_style () {
+  _private_is_valid_project (route) {
+    const folders = [
+      fs.existsSync(path.resolve(route, 'package.json')),
+      fs.existsSync(path.resolve(route, 'src', 'index.js')),
+      fs.existsSync(path.resolve(route, 'src', 'routes.js')),
+      fs.existsSync(path.resolve(route, 'src', 'server.js')),
+      fs.existsSync(path.resolve(route, 'src', 'app', 'controllers')),
+      fs.existsSync(path.resolve(route, 'src', 'app', 'models')),
+      fs.existsSync(path.resolve(route, 'src', 'app', 'validators'))
+    ]
+
+    if (folders.includes(false)) {
+      this.log('\n\n ' + msg.warning('Looks like you are running the entity generator in the wrong place!'))
+      this.log(' ' + msg.warning('Try running the generator in the root folder of your project'))
+      throw Error(' ' + msg.error(this._private_build_error_massage(folders)))
+    }
+  }
+
+  _private_build_error_massage (folders) {
+    let erroMsg = `\nUnable to find folders/files:\n`
+
+    erroMsg += folders[0] ? '' : ' package.json'
+    erroMsg += folders[1] ? '' : '\n index.js'
+    erroMsg += folders[2] ? '' : '\n routes.js'
+    erroMsg += folders[3] ? '' : '\n server.js'
+    erroMsg += folders[4] ? '' : '\n controllers'
+    erroMsg += folders[5] ? '' : '\n models'
+    erroMsg += folders[6] ? '' : '\n package.json'
+    erroMsg += folders[7] ? '' : '\n validators'
+    return erroMsg
+  }
+
+  _private_check_database_style (path) {
     const regexFind = /\mongoose\b/gi
-    const db = fs.readFileSync(`${this.destinationRoot('./')}/package.json`, 'utf8')
+    const db = fs.readFileSync(`${path}/package.json`, 'utf8')
     this.isMongoose = regexFind.test(db)
   }
 
@@ -174,17 +206,16 @@ module.exports = class extends Generator {
     )
   }
 
-  _private_read_route () {
-    this.localPath = path.resolve('..', '..', 'routes.js')
-    fs.readFile(this.localPath, 'utf8', (err, data) => {
+  _private_read_route (path) {
+    fs.readFile(path, 'utf8', (err, data) => {
       if (err) return this.log({ error: 'Unable to read the Routes.js', err })
 
-      this._private_write_route(data, this.localPath)
+      this._private_write_route(data, path)
     })
   }
 
-  _private_create_tmp_route () {
-    this.destinationRoot(this.generatorPath)
+  _private_create_tmp_route (path) {
+    this.destinationRoot(path)
     this.fs.copyTpl(
       this.templatePath('./routes/templateRoute.ejs'),
       this.destinationPath('tmpRoute.js'),
@@ -194,12 +225,12 @@ module.exports = class extends Generator {
     )
   }
 
-  _private_write_route (data, localPath) {
+  _private_write_route (data, path) {
     const hook = '// Do not remove this cometary'
     if (data) {
       let route = data.replace(hook, `${require('./generator/routes/tmpRoute.js')}\n${hook}`)
 
-      fs.writeFile(localPath, route, err => {
+      fs.writeFile(path, route, err => {
         if (err) return this.log({ error: 'Unable to write on Routes.js', err })
       })
 
