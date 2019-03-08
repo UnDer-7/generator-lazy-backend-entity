@@ -4,37 +4,44 @@ const Generator = require('yeoman-generator')
 const _ = require('lodash')
 const path = require('path')
 const fs = require('fs')
-const util = require('util')
-const cmd = util.promisify(require('child_process').exec)
+
 
 const entity = require('./generator/questions/entity')
 const field = require('./generator/questions/field')
 const msg = require('./generator/messages')
+const utils = require('./generator/utils')
 
 module.exports = class extends Generator {
-  // constructor (args, opts) {
-  //   super(args, opts)
-  // }
+  constructor (args, opts) {
+    super(args, opts)
+
+    this.fields = []
+    this.routesFile = null
+    this.generatorPath = null
+    this.isMongoose = null
+  }
 
   async start () {
-    const userRootPath = this.destinationRoot('./')
-    const generatorPath = path.resolve(__dirname, 'generator', 'routes')
+    this.userRootPath = this.destinationRoot('./')
+    this.generatorPath = path.resolve(__dirname)
 
-    this._private_is_valid_project(userRootPath)
+    await this._private_is_valid_project()
+    this.routesFile = await this._private_read_route()
 
     this._private_initial_text()
     await this._private_askFieldQuestions()
 
-    this._private_check_database_style(userRootPath)
+    this._private_check_database_style()
     this._private_model()
     this._private_validator()
     this._private_controller()
     if (!this.isMongoose) this._private_migration()
-    this._private_read_route(userRootPath)
-    this._private_create_tmp_route(generatorPath)
+    this._private_create_tmp_route()
   }
 
   async end () {
+    this._private_write_route()
+
     const questionCreateTable = await this.prompt([
       {
         type: 'confirm',
@@ -119,41 +126,29 @@ module.exports = class extends Generator {
     } while (this.moreFields.addField)
   }
 
-  _private_is_valid_project (route) {
+  _private_is_valid_project () {
     const folders = [
-      fs.existsSync(path.resolve(route, 'package.json')),
-      fs.existsSync(path.resolve(route, 'src', 'index.js')),
-      fs.existsSync(path.resolve(route, 'src', 'routes.js')),
-      fs.existsSync(path.resolve(route, 'src', 'server.js')),
-      fs.existsSync(path.resolve(route, 'src', 'app', 'controllers')),
-      fs.existsSync(path.resolve(route, 'src', 'app', 'models')),
-      fs.existsSync(path.resolve(route, 'src', 'app', 'validators'))
+      fs.existsSync(path.resolve(this.userRootPath, 'package.json')),
+      fs.existsSync(path.resolve(this.userRootPath, 'src', 'index.js')),
+      fs.existsSync(path.resolve(this.userRootPath, 'src', 'routes.js')),
+      fs.existsSync(path.resolve(this.userRootPath, 'src', 'server.js')),
+      fs.existsSync(path.resolve(this.userRootPath, 'src', 'app', 'controllers')),
+      fs.existsSync(path.resolve(this.userRootPath, 'src', 'app', 'models')),
+      fs.existsSync(path.resolve(this.userRootPath, 'src', 'app', 'validators'))
     ]
+
+    const errorMsg = utils.buildErrorMessage(folders)
 
     if (folders.includes(false)) {
       this.log('\n\n ' + msg.warning('Looks like you are running the entity generator in the wrong place!'))
       this.log(' ' + msg.warning('Try running the generator in the root folder of your project'))
-      throw Error(' ' + msg.error(this._private_build_error_massage(folders)))
+      throw Error(' ' + msg.error(errorMsg))
     }
   }
 
-  _private_build_error_massage (folders) {
-    let erroMsg = `\nUnable to find folders/files:\n`
-
-    erroMsg += folders[0] ? '' : ' package.json'
-    erroMsg += folders[1] ? '' : '\n index.js'
-    erroMsg += folders[2] ? '' : '\n routes.js'
-    erroMsg += folders[3] ? '' : '\n server.js'
-    erroMsg += folders[4] ? '' : '\n controllers'
-    erroMsg += folders[5] ? '' : '\n models'
-    erroMsg += folders[6] ? '' : '\n package.json'
-    erroMsg += folders[7] ? '' : '\n validators'
-    return erroMsg
-  }
-
-  _private_check_database_style (path) {
+  _private_check_database_style () {
     const regexFind = /\mongoose\b/gi
-    const db = fs.readFileSync(`${path}/package.json`, 'utf8')
+    const db = fs.readFileSync(`${this.userRootPath}/package.json`, 'utf8')
     this.isMongoose = regexFind.test(db)
   }
 
@@ -161,7 +156,7 @@ module.exports = class extends Generator {
     this.destinationRoot(path.resolve('src', 'app', 'models'))
 
     this.fs.copyTpl(
-      this.templatePath(`./model/${this._private_getFolder()}/Template.ejs`),
+      this.templatePath(`./model/${utils.getFolder()}/Template.ejs`),
       this.destinationPath(`${this.entity.entityName}.js`),
       {
         entity: this.entity,
@@ -185,7 +180,7 @@ module.exports = class extends Generator {
     this.destinationRoot(path.resolve('..', 'controllers'))
 
     this.fs.copyTpl(
-      this.templatePath(`./controller/${this._private_getFolder()}/TemplateController.ejs`),
+      this.templatePath(`./controller/${utils.getFolder()}/TemplateController.ejs`),
       this.destinationPath(`${this.entity.entityName}Controller.js`),
       {
         entity: this.entity,
@@ -198,7 +193,7 @@ module.exports = class extends Generator {
     this.destinationRoot(path.resolve('..', '..', 'database', 'migrations'))
     this.fs.copyTpl(
       this.templatePath('./migrations/224201901831-create-user.ejs'),
-      this.destinationPath(`${this._private_generate_date_time()}-create-${this.entity.entityName.toLowerCase()}.js`),
+      this.destinationPath(`${utils.generateDateTime()}-create-${this.entity.entityName.toLowerCase()}.js`),
       {
         entity: this.entity,
         fields: this.fields
@@ -206,16 +201,8 @@ module.exports = class extends Generator {
     )
   }
 
-  _private_read_route (path) {
-    fs.readFile(path, 'utf8', (err, data) => {
-      if (err) return this.log({ error: 'Unable to read the Routes.js', err })
-
-      this._private_write_route(data, path)
-    })
-  }
-
-  _private_create_tmp_route (path) {
-    this.destinationRoot(path)
+  _private_create_tmp_route () {
+    this.destinationRoot(path.resolve(this.generatorPath))
     this.fs.copyTpl(
       this.templatePath('./routes/templateRoute.ejs'),
       this.destinationPath('tmpRoute.js'),
@@ -225,40 +212,37 @@ module.exports = class extends Generator {
     )
   }
 
-  _private_write_route (data, path) {
+  async _private_write_route () {
+    const tmpRoute = require('./tmpRoute')
     const hook = '// Do not remove this cometary'
-    if (data) {
-      let route = data.replace(hook, `${require('./generator/routes/tmpRoute.js')}\n${hook}`)
 
-      fs.writeFile(path, route, err => {
-        if (err) return this.log({ error: 'Unable to write on Routes.js', err })
-      })
+    const updatedRoutes = this.routesFile.replace(hook, `${tmpRoute}\n${hook}`)
+    try {
+      fs.writeFileSync(path.resolve(this.userRootPath, 'src', 'routes.js'), updatedRoutes)
+    } catch (e) {
+      throw Error(`${msg.error('Unable to write on Routes.js')} \n${e}}`)
+    }
 
-      fs.unlink(`${this.generatorPath}/tmpRoute.js`, err => {
-        if (err) return this.log({ error: 'Unable to delete the tmpRoute.js', err })
-      })
+    try {
+      fs.unlinkSync(path.resolve(this.generatorPath, 'tmpRoute.js'))
+    } catch (e) {
+      throw Error(`${msg.error('Unable to delete the tmpRoute.js')} \n${e}}`)
     }
   }
 
-  _private_getFolder () {
-    if (this.isMongoose) return 'noSQL'
-    return 'sql'
-  }
+  _private_read_route () {
+    try {
+      const data = fs.readFileSync(`${this.userRootPath}/src/routes.js`, 'utf8')
 
-  /**
-   * Generates a string containing the date and hour.
-   * format: month, date, year, hours, minutes and seconds
-   * @return {String} - ex: 2132019212724
-   * @private
-   */
-  _private_generate_date_time () {
-    let currentdate = new Date()
-    return '' + (currentdate.getMonth() + 1) +
-      currentdate.getDate() +
-      currentdate.getFullYear() +
-      currentdate.getHours() +
-      currentdate.getMinutes() +
-      currentdate.getSeconds()
+      if (!data.includes('// Do not remove this cometary')) {
+        throw Error(msg.error(`Couldn't find the hook: '// Do not remove this cometary' in the routes.js`))
+      }
+
+      return data
+    } catch (e) {
+      this.log(msg.error('Unable to read the Routes.js'))
+      throw Error(msg.error(e))
+    }
   }
 
   /**
@@ -270,7 +254,7 @@ module.exports = class extends Generator {
     this.log(msg.dash('\n------------------------------'))
     this.log('CHECKING IF SEQUELIZE-CLI IS INSTALLED')
     this.log(msg.dash('------------------------------'))
-    return this._private_execute_command(' npx sequelize --version')
+    return utils.executeShellCommand(' npx sequelize --version', this.userRootPath)
   }
 
   _private_create_table () {
@@ -278,18 +262,6 @@ module.exports = class extends Generator {
     this.log(`CREATING ${this.entity.entityName}'S TABLE!`)
     this.log(msg.dash('------------------------------'))
 
-    return this._private_execute_command('npx sequelize db:migrate')
-  }
-
-  /**
-   * Run a command on the user's console.
-   * It'll execute the command inside the user's project folder
-   * @param command {String}
-   * @return
-   * @private
-   */
-  _private_execute_command (command) {
-    console.log(`Running ${msg.greenText(command)} command`)
-    return cmd(command, { cwd: path.resolve(this.localPath, '..', '..') })
+    return utils.executeShellCommand('npx sequelize db:migrate', this.userRootPath)
   }
 }
