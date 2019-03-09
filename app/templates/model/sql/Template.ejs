@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
   const <%= entity.entityName %> = sequelize.define('<%= entity.entityName %>', {
 <%_ for(let i=0; i< fields.length; i++) { _%>
     <%= fields[i].fieldName %>: {
-      type: DataTypes.<%= fields[i].fieldType.toUpperCase() %>,
+      type: DataTypes.<%= fields[i].fieldType === 'Number' ? 'INTEGER' : fields[i].fieldType.toUpperCase() %>,
   <%_if(fields[i].hasOwnProperty('validations')) {_%>
     <%_if(fields[i].validations.includes('required')) {_%>
       allowNull: false,

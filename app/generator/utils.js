@@ -32,8 +32,8 @@ module.exports = {
       currentdate.getMinutes() +
       currentdate.getSeconds()
   },
-  getFolder: () => {
-    if (this.isMongoose) return 'noSQL'
+  getFolder: (isMongoose) => {
+    if (isMongoose) return 'noSQL'
     return 'sql'
   },
 

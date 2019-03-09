@@ -3,12 +3,50 @@
 const mongoose = require('mongoose')
 const paginate = require('mongoose-paginate')
 
-const <%= entity.entityName %>Schema = new mongoose.Schema({<% for(let i=0; i< field.length; i++) { %>
-  <%= field[i].fieldName %>: {
-    type: <%= field[i].fieldType %>,<%if (field[i].addValid) { %>
-    required: <%= field[i].required %><% }else { %>
-    required: false<% } %>
-  },<% } %>
+const <%= entity.entityName %>Schema = new mongoose.Schema({
+<%_ fields.forEach(field => { _%>
+  <%= field.fieldName%>: {
+    type: <%= field.fieldType %>,
+  <%_ if (field.hasOwnProperty('validations')) {_%>
+    <%_ if (field.validations.includes('required')) {_%>
+    required: true,
+    <%_}_%>
+    <%_ if (field.validations.includes('unique')) {_%>
+    unique: true,
+    <%_}_%>
+    <%_ if (field.fieldType === 'String' && field.minSize) {_%>
+    minlength: <%= field.minSize%>,
+    <%_}_%>
+    <%_ if (field.fieldType === 'String' && field.maxSize) {_%>
+    maxlength: <%= field.maxSize%>,
+    <%_}_%>
+    <%_ if (field.fieldType === 'Number' && field.minSize) {_%>
+    min: <%= field.minSize%>,
+    <%_}_%>
+    <%_ if (field.fieldType === 'Number' && field.maxSize) {_%>
+    max: <%= field.maxSize%>,
+    <%_}_%>
+    <%_ if (field.stringConstrains === 'letter') {_%>
+    match: [
+      /^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ]+$/,
+      'only letters are allowed'
+    ],
+    <%_}_%>
+    <%_ if (field.stringConstrains === 'number') {_%>
+    match: [
+      /^[0-9]+$/,
+      'only numbers are allowed'
+    ],
+    <%_}_%>
+    <%_ if (field.stringConstrains === 'alphanumeric') {_%>
+    match: [
+      /^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ0-9]+$/,
+      'only alphanumeric characters are allowed'
+    ],
+    <%_}_%>
+  <%_}_%>
+  },
+<%_})_%>
   createdAt: {
     type: Date,
     default: Date.now()

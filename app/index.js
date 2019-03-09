@@ -5,7 +5,6 @@ const _ = require('lodash')
 const path = require('path')
 const fs = require('fs')
 
-
 const entity = require('./generator/questions/entity')
 const field = require('./generator/questions/field')
 const msg = require('./generator/messages')
@@ -27,11 +26,11 @@ module.exports = class extends Generator {
 
     await this._private_is_valid_project()
     this.routesFile = await this._private_read_route()
+    this._private_check_database_style()
 
     this._private_initial_text()
     await this._private_askFieldQuestions()
 
-    this._private_check_database_style()
     this._private_model()
     this._private_validator()
     this._private_controller()
@@ -42,15 +41,7 @@ module.exports = class extends Generator {
   async end () {
     this._private_write_route()
 
-    const questionCreateTable = await this.prompt([
-      {
-        type: 'confirm',
-        name: 'createTable',
-        message: `Do you want to create ${this.entity.entityName}'s table?`
-      }
-    ])
-
-    if (questionCreateTable.createTable) {
+    if (this.createTable && this.createTable.createTable) {
       try {
         const { stdout } = await this._private_verify_sequelize_cli()
         console.log('stdout ', msg.greenText(stdout) + msg.dash('------------------------------\n'))
@@ -96,6 +87,7 @@ module.exports = class extends Generator {
         }))
       }
       this.log('\n')
+      this.log(msg.titleDash(`Entity: ` + msg.cyan(this.entity.entityName)))
       this.log(msg.titleDash(`Fields Added:`))
       let fieldAdded = []
       this.fields.forEach((element, index) => {
@@ -124,6 +116,14 @@ module.exports = class extends Generator {
       })
       this.log('\n')
     } while (this.moreFields.addField)
+
+    if (!this.isMongoose) {
+      this.createTable = await this.prompt({
+        type: 'confirm',
+        name: 'createTable',
+        message: `Do you want to create ${this.entity.entityName}'s table?`
+      })
+    }
   }
 
   _private_is_valid_project () {
@@ -156,7 +156,7 @@ module.exports = class extends Generator {
     this.destinationRoot(path.resolve('src', 'app', 'models'))
 
     this.fs.copyTpl(
-      this.templatePath(`./model/${utils.getFolder()}/Template.ejs`),
+      this.templatePath(`./model/${utils.getFolder(this.isMongoose)}/Template.ejs`),
       this.destinationPath(`${this.entity.entityName}.js`),
       {
         entity: this.entity,
@@ -180,7 +180,7 @@ module.exports = class extends Generator {
     this.destinationRoot(path.resolve('..', 'controllers'))
 
     this.fs.copyTpl(
-      this.templatePath(`./controller/${utils.getFolder()}/TemplateController.ejs`),
+      this.templatePath(`./controller/${utils.getFolder(this.isMongoose)}/TemplateController.ejs`),
       this.destinationPath(`${this.entity.entityName}Controller.js`),
       {
         entity: this.entity,
