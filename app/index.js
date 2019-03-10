@@ -142,7 +142,11 @@ module.exports = class extends Generator {
     if (folders.includes(false)) {
       this.log('\n\n ' + msg.warning('Looks like you are running the entity generator in the wrong place!'))
       this.log(' ' + msg.warning('Try running the generator in the root folder of your project'))
-      throw Error(' ' + msg.error(errorMsg))
+      this.log()
+      throw Error(
+        msg.error(`\ntrying to create an Entity at: `) + this.userRootPath + '\n' +
+        msg.error(errorMsg)
+      )
     }
   }
 
@@ -160,7 +164,8 @@ module.exports = class extends Generator {
       this.destinationPath(`${this.entity.entityName}.js`),
       {
         entity: this.entity,
-        fields: this.fields
+        fields: this.fields,
+        tableName: _.snakeCase(this.entity.entityName).toUpperCase()
       }
     )
   }

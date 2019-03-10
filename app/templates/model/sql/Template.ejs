@@ -4,45 +4,66 @@ const sequelizePaginate = require('sequelize-paginate')
 
 module.exports = (sequelize, DataTypes) => {
   const <%= entity.entityName %> = sequelize.define('<%= entity.entityName %>', {
-<%_ for(let i=0; i< fields.length; i++) { _%>
+<%_ for (let i=0; i< fields.length; i++) { _%>
     <%= fields[i].fieldName %>: {
       type: DataTypes.<%= fields[i].fieldType === 'Number' ? 'INTEGER' : fields[i].fieldType.toUpperCase() %>,
-  <%_if(fields[i].hasOwnProperty('validations')) {_%>
-    <%_if(fields[i].validations.includes('required')) {_%>
+  <%_ if (fields[i].hasOwnProperty('validations')) {_%>
+    <%_ if (fields[i].validations.includes('required')) {_%>
       allowNull: false,
     <%_}_%>
-    <%_if(fields[i].validations.includes('unique')) {_%>
+    <%_ if (fields[i].validations.includes('unique')) {_%>
       unique: true,
     <%_}_%>
-    <%_if(fields[i].validations.includes('email') ||
+    <%_ if (fields[i].validations.includes('email') ||
           fields[i].validations.includes('lettersNumbers') ||
           fields[i].validations.includes('min') ||
           fields[i].validations.includes('max')) {_%>
       validate: {
-        <%_if(fields[i].validations.includes('email')) {_%>
+        <%_ if (fields[i].validations.includes('email')) {_%>
         isEmail: {
           msg: 'invalid email format'
         },
         <%_}_%>
-        <%_if(fields[i].stringConstrains === 'letter') {_%>
+        <%_ if (fields[i].stringConstrains === 'letter') {_%>
         isAlpha: {
           msg: 'only letters are allowed'
         },
         <%_}_%>
-        <%_if(fields[i].stringConstrains === 'number') {_%>
+        <%_ if (fields[i].stringConstrains === 'number') {_%>
         isNumeric: {
           msg: 'only numbers are allowed'
         },
         <%_}_%>
-        <%_if(fields[i].stringConstrains === 'alphanumeric') {_%>
+        <%_ if (fields[i].stringConstrains === 'alphanumeric') {_%>
         isAlphanumeric: {
           msg: 'only alphanumeric characters are allowed'
         },
         <%_}_%>
-        <%_if(fields[i].minSize || fields[i].maxSize) {_%>
+        <%_ if (fields[i].fieldType === 'String' && (fields[i].minSize || fields[i].maxSize)) {_%>
+        <%_ if (fields[i].maxSize) {_%>
         len: {
           args: [<%= fields[i].minSize || 0 %>,<%= fields[i].maxSize || 0 %>],
           msg: 'only values with a length between <%= fields[i].minSize || 0 %> and <%= fields[i].maxSize || 0 %> are allowed'
+        },
+        <%_}_%>
+        <%_ if (fields[i].minSize && !fields[i].maxSize) {_%>
+        minimumLength(value) {
+          if (value.length < <%= fields[i].minSize%>) {
+            throw new Error('Minimum length required is <%= fields[i].minSize%>')
+          }
+        },
+        <%_}_%>
+        <%_}_%>
+        <%_ if (fields[i].fieldType === 'Number' && fields[i].minSize) {_%>
+        min: {
+          args: [<%= fields[i].minSize%>],
+          msg: 'Minimum value required is <%= fields[i].minSize%>'
+        },
+        <%_}_%>
+        <%_ if (fields[i].fieldType === 'Number' && fields[i].maxSize) {_%>
+        max: {
+          args: [<%= fields[i].maxSize%>],
+          msg: 'Maximum value allowed is <%= fields[i].maxSize%>'
         }
         <%_}_%>
       }
@@ -50,7 +71,10 @@ module.exports = (sequelize, DataTypes) => {
   <%_}_%>
     },
 <%_ } _%>
-    freezeTableName: true
+  },
+  {
+    freezeTableName: true,
+    tableName: '<%= tableName%>'
   })
 
   <%= entity.entityName %>.associate = function (models) {

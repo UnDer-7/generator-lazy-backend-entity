@@ -4,16 +4,15 @@ const msg = require('./messages')
 
 module.exports = {
   buildErrorMessage: folders => {
-    let errorMsg = `\nUnable to find folders/files:\n`
+    let errorMsg = `\nUnable to find:\n`
 
-    errorMsg += folders[0] ? '' : ' package.json'
-    errorMsg += folders[1] ? '' : '\n index.js'
-    errorMsg += folders[2] ? '' : '\n routes.js'
-    errorMsg += folders[3] ? '' : '\n server.js'
-    errorMsg += folders[4] ? '' : '\n controllers'
-    errorMsg += folders[5] ? '' : '\n models'
-    errorMsg += folders[6] ? '' : '\n package.json'
-    errorMsg += folders[7] ? '' : '\n validators'
+    errorMsg += folders[0] ? '' : ' - package.json'
+    errorMsg += folders[1] ? '' : '\n - index.js'
+    errorMsg += folders[2] ? '' : '\n - routes.js'
+    errorMsg += folders[3] ? '' : '\n - server.js'
+    errorMsg += folders[4] ? '' : `\n - controllers' folder`
+    errorMsg += folders[5] ? '' : `\n - models' folder`
+    errorMsg += folders[6] ? '' : `\n - validators' folder`
     return errorMsg
   },
 
