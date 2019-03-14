@@ -201,7 +201,8 @@ module.exports = class extends Generator {
       this.destinationPath(`${utils.generateDateTime()}-create-${this.entity.entityName.toLowerCase()}.js`),
       {
         entity: this.entity,
-        fields: this.fields
+        fields: this.fields,
+        tableName: _.snakeCase(this.entity.entityName).toUpperCase()
       }
     )
   }
