@@ -13,7 +13,7 @@ class <%= entity.entityName %>Controller {
     }
   }
 
-  async <%= entity.entityName %>User (req, res) {
+  async update<%= entity.entityName %> (req, res) {
     try {
       const [numberOfAffectedRows, [updated<%= entity.entityName %>]] = await <%= entity.entityName %>.update(req.body,
         {
